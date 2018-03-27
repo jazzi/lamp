@@ -33,8 +33,8 @@ apache_preinstall_settings(){
 install_apache(){
 
     log "Info" "Starting to install dependencies packages for Apache..."
-    local apt_list=(openssl libssl-dev libxml2-dev lynx lua-expat-dev)
-    local yum_list=(zlib-devel openssl-devel libxml2-devel lynx expat-devel lua-devel lua)
+    local apt_list=(openssl libssl-dev libxml2-dev lynx lua-expat-dev libjansson-dev)
+    local yum_list=(zlib-devel openssl-devel libxml2-devel lynx expat-devel lua-devel lua jansson-devel)
     if check_sys packageManager apt; then
         for depend in ${apt_list[@]}; do
             error_detect_depends "apt-get -y install ${depend}"
@@ -191,6 +191,13 @@ EOF
     sed -i -r 's/^#(.*mod_speling.so)/\1/' ${apache_location}/conf/httpd.conf
     sed -i -r 's/^#(.*mod_userdir.so)/\1/' ${apache_location}/conf/httpd.conf
     sed -i -r 's/^#(.*mod_unique_id.so)/\1/' ${apache_location}/conf/httpd.conf
+    # add mod_md to httpd.conf
+    if [[ `grep -E -c "^\s*LoadModule md_module modules/mod_md.so" ${apache_location}/conf/httpd.conf` -eq 0 ]]; then
+        if [ -f ${apache_location}/modules/mod_md.so ]; then
+            lnum=$(sed -n '/LoadModule/=' ${apache_location}/conf/httpd.conf | tail -1)
+            sed -i "${lnum}aLoadModule md_module modules/mod_md.so" ${apache_location}/conf/httpd.conf
+        fi
+    fi
 
     echo "ProtocolsHonorOrder On" >> ${apache_location}/conf/httpd.conf
     echo "Protocols h2 http/1.1" >> ${apache_location}/conf/httpd.conf
